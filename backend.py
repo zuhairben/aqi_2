@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %
 app = Flask(__name__)
 
 # Load the best model
-model_path = "model_registry/gradient_boosting.pkl"
+model_path = "model_registry/linear_regression.pkl"
 model = joblib.load(model_path)
 
 # Connect to the feature store
