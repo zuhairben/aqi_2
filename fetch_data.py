@@ -76,7 +76,9 @@ if __name__ == "__main__":
         timestamp = int(current_date.timestamp())
         historical_data = fetch_historical_data(latitude, longitude, timestamp)
         if historical_data:
-            data.append(historical_data)
+            # Ensure no duplicates
+            if all(h["aqi"]["list"][0]["dt"] != historical_data["aqi"]["list"][0]["dt"] for h in data):
+                data.append(historical_data)
         current_date += timedelta(hours=1)  # Increment by 1 hour
 
     # Save data to file

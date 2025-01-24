@@ -2,10 +2,10 @@ import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px
-from datetime import datetime
 
-# Backend API URL
+# Backend API URLs
 API_URL = "http://127.0.0.1:5000/predict"
+CUSTOM_API_URL = "http://127.0.0.1:5000/predict_custom"
 
 st.set_page_config(page_title="AQI Predictor", layout="wide")
 
@@ -56,13 +56,18 @@ humidity = st.sidebar.number_input("Humidity (%)", value=50.0, step=1.0)
 wind_speed = st.sidebar.number_input("Wind Speed (km/h)", value=10.0, step=0.5)
 
 if st.sidebar.button("Predict"):
-    custom_features = pd.DataFrame({
-        "weather_temperature": [temperature],
-        "weather_humidity": [humidity],
-        "weather_wind_speed": [wind_speed]
+    # Send custom input to backend
+    custom_prediction = requests.post(CUSTOM_API_URL, json={
+        "temperature": temperature,
+        "humidity": humidity,
+        "wind_speed": wind_speed
     })
-    custom_prediction = requests.post(API_URL, json=custom_features.to_dict(orient="records"))
+
     if custom_prediction.status_code == 200:
-        st.sidebar.write(f"Predicted AQI: {custom_prediction.json()['predicted_aqi']}")
+        prediction_result = custom_prediction.json()
+        if "predicted_aqi" in prediction_result:
+            st.sidebar.success(f"Predicted AQI: {prediction_result['predicted_aqi']}")
+        else:
+            st.sidebar.error("Unexpected response format from the backend.")
     else:
-        st.sidebar.error("Failed to fetch prediction for custom input.")
+        st.sidebar.error(f"Error: {custom_prediction.status_code} - {custom_prediction.text}")

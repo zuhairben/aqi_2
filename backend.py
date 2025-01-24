@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from sklearn.preprocessing import LabelEncoder
 import logging
+import numpy as np
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -20,7 +21,6 @@ db_file = "feature_store.db"
 
 # Preprocessing helpers
 label_encoders = {}  # Store label encoders for non-numeric columns
-
 
 def preprocess_data(X):
     """Preprocess input features for prediction."""
@@ -42,8 +42,11 @@ def preprocess_data(X):
             le = label_encoders[col]
             X[col] = le.transform(X[col])
 
-    return X
+    # Ensure feature alignment with the model
+    model_features = model.feature_names_in_
+    X = X.reindex(columns=model_features, fill_value=0)
 
+    return X
 
 def fetch_latest_features():
     """Fetch the most recent features from the Feature Store."""
@@ -57,7 +60,6 @@ def fetch_latest_features():
     latest_features = pd.read_sql_query(query, conn)
     conn.close()
     return latest_features
-
 
 @app.route("/predict", methods=["GET"])
 def predict():
@@ -82,7 +84,6 @@ def predict():
         })
 
     return jsonify({"predictions": predictions})
-
 
 @app.route("/predict_custom", methods=["POST"])
 def predict_custom():
@@ -118,7 +119,6 @@ def predict_custom():
     except Exception as e:
         logging.error("Error during prediction: %s", e)
         return jsonify({"error": f"Error during prediction: {e}"}), 400
-
 
 if __name__ == "__main__":
     app.run(debug=True)

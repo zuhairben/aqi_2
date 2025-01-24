@@ -3,7 +3,6 @@ import numpy as np
 import json
 from datetime import datetime
 from sklearn.preprocessing import StandardScaler
-from statsmodels.tsa.seasonal import STL
 import logging
 
 # Set up logging
@@ -53,6 +52,12 @@ for entry in data:
         logging.warning(f"Missing key in entry: {e}")
 
 df = pd.DataFrame(records)
+
+# Remove rows with constant values
+constant_columns = [col for col in df.columns if df[col].nunique() <= 1]
+if constant_columns:
+    logging.info(f"Removing constant columns: {constant_columns}")
+    df.drop(columns=constant_columns, inplace=True)
 
 # Feature Engineering
 df["is_weekend"] = df["weekday"].apply(lambda x: 1 if x >= 5 else 0)
