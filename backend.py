@@ -119,46 +119,6 @@ def predict_custom():
     except Exception as e:
         logging.error("Error during prediction: %s", e)
         return jsonify({"error": f"Error during prediction: {e}"}), 400
-    
-@app.route("/aqi_trend", methods=["GET"])
-def aqi_trend():
-    """Return historical AQI data and predictions for the next 3 days."""
-    try:
-        # Fetch historical AQI data
-        conn = sqlite3.connect(db_file)
-        query = "SELECT date, aqi FROM features ORDER BY date ASC"
-        historical_data = pd.read_sql_query(query, conn)
-        conn.close()
-
-        if historical_data.empty:
-            return jsonify({"error": "No historical AQI data available."}), 400
-
-        # Convert date to datetime
-        historical_data["date"] = pd.to_datetime(historical_data["date"])
-
-        # Generate predictions for the next 3 days
-        latest_features = fetch_latest_features().drop(columns=["aqi", "date"])
-        X_processed = preprocess_data(latest_features)
-
-        future_dates = []
-        future_aqi = []
-        for i in range(3):
-            predicted_aqi = model.predict(X_processed)[0]
-            future_dates.append((datetime.now() + timedelta(days=i + 1)).strftime("%Y-%m-%d"))
-            future_aqi.append(round(predicted_aqi, 2))
-
-        # Combine historical and future data
-        future_data = pd.DataFrame({"date": pd.to_datetime(future_dates), "aqi": future_aqi})
-        combined_data = pd.concat([historical_data, future_data], ignore_index=True)
-
-        # Prepare JSON response
-        combined_data["date"] = combined_data["date"].dt.strftime("%Y-%m-%d")
-        response = combined_data.to_dict(orient="records")
-        return jsonify({"aqi_trend": response})
-    except Exception as e:
-        logging.error(f"Error fetching AQI trend data: {e}")
-        return jsonify({"error": f"Error fetching AQI trend data: {e}"}), 400
-
 
 if __name__ == "__main__":
     app.run(debug=True)
